@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smartphone Features</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f0f0f0;
+            margin: 0;
+        }
+        #feature-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 10px;
+            height: 80vh;
+            width: 100%;
+            position: relative;
+        }
+        .feature {
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.5s ease-in-out;
+            position: absolute;
+            padding: 10px;
+            box-sizing: border-box;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+            cursor: pointer;
+        }
+        .image-placeholder {
+            width: 80%;
+            height: 60%;
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 8px;
+        }
+        #controls {
+            display: flex;
+            align-items: center;
+            margin-top: 20px;
+        }
+        #shuffle-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 20px;
+            transition: background-color 0.5s ease-in-out;
+        }
+        #color-palette {
+            width: 200px;
+            height: 20px;
+            background: linear-gradient(to right, red,yellow, green, cyan, blue, magenta);
+            position: relative;
+            border-radius: 10px;
+            overflow: visible;
+        }
+        #color-slider {
+            width: 10px;
+            height: 30px;
+            background-color: white;
+            border: 2px solid black;
+            position: absolute;
+            top: -5px;
+            left: 0;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: left 0.5s ease-in-out;
+        }
+        .popup {
+            position: fixed;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 1000;
+            transition: all 0.5s ease-in-out;
+            overflow: hidden;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .popup-content {
+            width: 100%;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+        }
+        .popup-image {
+            width: 60%;
+            height: 60%;
+            background-color: rgba(255,255,255,0.3);
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .close-popup {
+            align-self: flex-end;
+            padding: 10px 20px;
+            background-color: rgba(255,255,255,0.3);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="feature-grid">
+        <!-- Блоки будут добавлены с помощью JavaScript -->
+    </div>
+    <div id="controls">
+        <button id="shuffle-button">Перемешать блоки</button>
+        <div id="color-palette">
+            <div id="color-slider"></div>
+        </div>
+    </div>
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <div class="popup-image"></div>
+            <p id="popup-text"></p>
+        </div>
+        <button class="close-popup">Закрыть</button>
+    </div>
+
+    <script>
+        const features = [
+            { x: 0, y: 0, w: 1, h: 1 },
+            { x: 1, y: 0, w: 1, h: 1 },
+            { x: 2, y: 0, w: 1, h: 1 },
+            { x: 3, y: 0, w: 1, h: 1 },
+            { x: 4, y: 0, w: 1, h: 2 },
+            { x: 0, y: 1, w: 1, h: 1 },
+            { x: 1, y: 1, w: 2, h: 2, isMain: true },
+            { x: 3, y: 1, w: 1, h: 1 },
+            { x: 0, y: 2, w: 1, h: 1 },
+            { x: 3, y: 2, w: 1, h: 1 },
+            { x: 4, y: 2, w: 1, h: 2 },
+            { x: 0, y: 3, w: 1, h: 1 },
+            { x: 1, y: 3, w: 1, h: 1 },
+            { x: 2, y: 3, w: 1, h: 1 },
+            { x: 3, y: 3, w: 1, h: 1 },
+            { x: 0, y: 4, w: 2, h: 1 },
+            { x: 2, y: 4, w: 1, h: 1 },
+            { x: 3, y: 4, w: 1, h: 1 },
+            { x: 4, y: 4, w: 1, h: 1 }
+        ];
+
+        let baseHue = Math.floor(Math.random() * 360);
+
+        function generateColorVariation(baseHue) {
+            const hueVariation = Math.floor(Math.random() * 30) - 15;
+            const newHue = (baseHue + hueVariation + 360) % 360;
+            return `hsl(${newHue}, 70%, 60%)`;
+        }
+
+        function updateFeaturePosition(feature, element) {
+            const gridElement = document.getElementById('feature-grid');
+            const cellWidth = gridElement.clientWidth / 5;
+            const cellHeight = gridElement.clientHeight / 5;
+
+            element.style.left = `${feature.x * cellWidth}px`;
+            element.style.top = `${feature.y * cellHeight}px`;
+            element.style.width = `${feature.w * cellWidth - 10}px`;
+            element.style.height = `${feature.h * cellHeight - 10}px`;
+            element.style.backgroundColor = generateColorVariation(baseHue);
+        }
+
+        function createFeatures() {
+            const grid = document.getElementById('feature-grid');
+            grid.innerHTML = '';
+            features.forEach((feature, index) => {
+                const div = document.createElement('div');
+                div.className = 'feature';
+                if (feature.isMain) {
+                    div.classList.add('main-image');
+                }
+
+                updateFeaturePosition(feature, div);
+
+                div.innerHTML = '<div class="image-placeholder"></div>';
+                div.innerHTML += `<p>Lorem ipsum ${index + 1}</p>`;
+                div.addEventListener('click', (e) => openPopup(`Lorem ipsum ${index + 1}`, div));
+                grid.appendChild(div);
+            });
+        }
+
+        function shuffleFeatures() {
+            baseHue = Math.floor(Math.random() * 360);
+            updateColorSlider();
+            updateShuffleButtonColor();
+            const grid = document.getElementById('feature-grid');
+            const featureElements = Array.from(grid.children);
+
+            for (let i = features.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [features[i], features[j]] = [features[j], features[i]];
+            }
+
+            featureElements.forEach((el, i) => {
+                updateFeaturePosition(features[i], el);
+            });
+        }
+
+        function updateColorSlider() {
+            const slider = document.getElementById('color-slider');
+            const paletteWidth = document.getElementById('color-palette').offsetWidth;
+            const sliderWidth = slider.offsetWidth;
+            const maxLeft = paletteWidth - sliderWidth;
+            const left = Math.min((baseHue / 360) * paletteWidth, maxLeft);
+            slider.style.left = `${left}px`;
+        }
+
+        function updateShuffleButtonColor() {
+            const button = document.getElementById('shuffle-button');
+            button.style.backgroundColor = `hsl(${baseHue}, 70%, 60%)`;
+        }
+
+        function openPopup(text, sourceElement) {
+            const popup = document.getElementById('popup');
+            const popupText = document.getElementById('popup-text');
+            popupText.textContent = text;
+
+            const rect = sourceElement.getBoundingClientRect();
+            const startX = rect.left + window.scrollX;
+            const startY = rect.top + window.scrollY;
+            const startWidth = rect.width;
+            const startHeight = rect.height;
+
+            popup.style.backgroundColor = sourceElement.style.backgroundColor;
+            popup.style.left = `${startX}px`;
+            popup.style.top = `${startY}px`;
+            popup.style.width = `${startWidth}px`;
+            popup.style.height = `${startHeight}px`;
+            popup.style.display = 'flex';
+            popup.style.opacity = '0';
+            popup.style.padding = '0';
+
+            requestAnimationFrame(() => {
+                popup.style.opacity = '1';
+                popup.style.left = '5%';
+                popup.style.top = '5%';
+                popup.style.width = '90%';
+                popup.style.height = '90%';
+                popup.style.padding = '20px';
+            });
+        }
+
+        function closePopup() {
+            const popup = document.getElementById('popup');
+            popup.style.opacity = '0';
+            popup.style.left = '50%';
+            popup.style.top = '50%';
+            popup.style.width = '0';
+            popup.style.height = '0';
+            popup.style.padding = '0';
+            setTimeout(() => {
+                popup.style.display = 'none';
+            }, 500);
+        }
+
+        function startDragging(e) {
+            document.addEventListener('mousemove', onDrag);
+            onDrag(e);
+        }
+
+        function stopDragging() {
+            document.removeEventListener('mousemove', onDrag);
+        }
+
+        function onDrag(e) {
+            const colorPalette = document.getElementById('color-palette');
+            const colorSlider = document.getElementById('color-slider');
+            const rect = colorPalette.getBoundingClientRect();
+            const sliderWidth = colorSlider.offsetWidth;
+            let x = e.clientX - rect.left - sliderWidth / 2;
+            x = Math.max(0, Math.min(x, rect.width - sliderWidth));
+            
+            baseHue = Math.floor((x / (rect.width - sliderWidth)) * 360);
+            colorSlider.style.left = `${x}px`;
+            
+            updateShuffleButtonColor();
+            
+            const featureElements = Array.from(document.getElementById('feature-grid').children);
+            featureElements.forEach((el, i) => {
+                el.style.backgroundColor = generateColorVariation(baseHue);
+            });
+        }
+
+        function initializeApp() {
+            createFeatures();
+            updateColorSlider();
+            updateShuffleButtonColor();
+
+            const shuffleButton = document.getElementById('shuffle-button');
+            if (shuffleButton) {
+                shuffleButton.addEventListener('click', shuffleFeatures);
+            }
+
+            const colorPalette = document.getElementById('color-palette');
+            if (colorPalette) {
+                colorPalette.addEventListener('mousedown', startDragging);
+            }
+
+            document.addEventListener('mouseup', stopDragging);
+
+            const closePopupButton = document.querySelector('.close-popup');
+            if (closePopupButton) {
+                closePopupButton.addEventListener('click', closePopup);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
